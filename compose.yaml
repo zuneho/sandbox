@@ -1,0 +1,24 @@
+version: '3.8'
+
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: sandbox-local-mysql
+    restart: always
+    ports:
+      - "3306:3306" # MySQL 기본 포트 매핑
+    environment:
+      MYSQL_ROOT_PASSWORD: abcd1234!@#$
+      MYSQL_DATABASE: sandbox # 자동 생성할 데이터베이스 이름
+    volumes:
+      - ./db/config:/etc/mysql/conf.d # 프로젝트의 dbconfig 디렉토리를 컨테이너 설정 파일로 매핑
+      - ./db/data:/var/lib/mysql # MySQL 데이터 파일 볼륨
+    networks:
+      - sandbox-local-network
+
+volumes:
+  mysql-data: # 데이터 파일 볼륨 정의
+
+networks:
+  sandbox-local-network:
+    driver: bridge

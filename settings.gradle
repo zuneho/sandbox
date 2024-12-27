@@ -1,0 +1,4 @@
+rootProject.name = 'sandbox'
+include 'sandbox-api'
+include 'sandbox-core'
+
