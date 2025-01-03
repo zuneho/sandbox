@@ -6,7 +6,5 @@ group = 'io.github.zuneho'
 version = '0.0.1-SNAPSHOT'
 
 dependencies {
-    developmentOnly 'org.springframework.boot:spring-boot-docker-compose'
-    runtimeOnly 'com.mysql:mysql-connector-java'
-    implementation 'com.zaxxer:HikariCP'
+
 }

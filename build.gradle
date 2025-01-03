@@ -66,6 +66,9 @@ project(':sandbox-api') {
     jar { enabled = false }
 
     dependencies {
+        developmentOnly 'org.springframework.boot:spring-boot-docker-compose'
+        runtimeOnly 'com.mysql:mysql-connector-j'
+        implementation 'com.zaxxer:HikariCP'
         implementation project(':sandbox-core')
     }
 }
