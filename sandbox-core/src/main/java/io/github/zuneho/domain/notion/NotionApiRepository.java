@@ -36,7 +36,7 @@ import java.util.concurrent.TimeUnit;
 public class NotionApiRepository {
 
     private static final String NOTION_DATABASE_ENDPOINT = "https://api.notion.com/v1/databases/";
-    private static final String NOTION_API_TOKEN = "secret_AgRqZEOeyakFwtggSqUufF1WICoqLvPcN7xF8podMCt";
+    private static final String NOTION_API_TOKEN = "";
     private static final String NOTION_VERSION_HEADER_NAME = "Notion-Version";
     private static final String NOTION_VERSION_HEADER_VALUE = "2022-06-28";
 
