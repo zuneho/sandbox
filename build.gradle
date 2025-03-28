@@ -40,12 +40,14 @@ subprojects  {
         implementation 'org.springframework.boot:spring-boot-starter-mustache'
         implementation 'org.springframework.boot:spring-boot-starter-validation'
         implementation 'org.springframework.boot:spring-boot-starter-web'
+
         compileOnly 'org.projectlombok:lombok'
         annotationProcessor 'org.projectlombok:lombok'
-        developmentOnly 'org.springframework.boot:spring-boot-devtools'
+
         testImplementation 'org.springframework.boot:spring-boot-starter-test'
         testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 
+        developmentOnly 'org.springframework.boot:spring-boot-devtools'
     }
 
     tasks.named('test') {
@@ -59,14 +61,16 @@ project(':sandbox-core') {
 
     dependencies {
         implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+        implementation "com.querydsl:querydsl-jpa:${queryDslVersion}"
+        implementation "com.querydsl:querydsl-apt:${queryDslVersion}"
+
         //WebClient
         implementation 'org.springframework.boot:spring-boot-starter-webflux'
 
-        //querydsl 추가
-        implementation "com.querydsl:querydsl-jpa:${queryDslVersion}"
-        implementation "com.querydsl:querydsl-apt:${queryDslVersion}"
-        implementation "org.apache.commons:commons-lang3:3.0"
 
+        implementation 'org.apache.poi:poi-ooxml:5.2.2'
+        implementation 'commons-io:commons-io:2.18.0'
+        implementation 'org.apache.commons:commons-lang3:3.17.0'
     }
 }
 
@@ -75,9 +79,10 @@ project(':sandbox-api') {
     jar { enabled = false }
 
     dependencies {
-        developmentOnly 'org.springframework.boot:spring-boot-docker-compose'
         runtimeOnly 'com.mysql:mysql-connector-j'
         implementation 'com.zaxxer:HikariCP'
         implementation project(':sandbox-core')
+
+        developmentOnly 'org.springframework.boot:spring-boot-docker-compose'
     }
 }

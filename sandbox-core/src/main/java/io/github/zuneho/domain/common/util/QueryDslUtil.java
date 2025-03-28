@@ -15,16 +15,16 @@ import java.util.stream.Collectors;
 
 @Slf4j
 public class QueryDslUtil {
-    private static final int DEFAULT_RECORD_STACK_COUNT = 3;
-    private static final OrderSpecifier<?>[] EMPTY_ORDER_SPECIFIER_ARRAY = new OrderSpecifier<?>[0];
+
+    public static final OrderSpecifier<?>[] EMPTY_ORDER_SPECIFIER_ARRAY = new OrderSpecifier<?>[0];
 
     /**
-     * pageable 의 sort property 를 expressionMap 에서 매칭된 속성으로 OrderSpecifier 배열 반환
+     * pageable 의 sort property 를 expressionMap 에서 매칭된 속성 으로 OrderSpecifier 배열 반환
      *
      * @param pageable      Spring pageable
      * @param expressionMap queryDsl 로 생성한 qClass 기반의 Expression
-     * @param defaultOrder  sortMapping 을 못할 경우  사용하게 될 기본 정렬
-     * @return sort 내의 sort property 순서대로 OrderSpecifier 배열
+     * @param defaultOrder  sortMapping 을 못할 경우  사용 하게 될 기본 정렬
+     * @return sort 내의 sort property 순서 대로 OrderSpecifier 배열
      */
     public static OrderSpecifier<?>[] getSort(Pageable pageable,
                                               Map<String, Expression<? extends Comparable<?>>> expressionMap,
@@ -35,12 +35,12 @@ public class QueryDslUtil {
     }
 
     /**
-     * pageable 의 sort property 를 qClassList 에서 매칭된 속성으로 OrderSpecifier 배열 반환
+     * pageable 의 sort property 를 qClassList 에서 매칭된 속성 으로 OrderSpecifier 배열 반환
      *
      * @param pageable     Spring pageable
      * @param qClassList   QueryDSL 로 생성된 EntityPathBase 객체 목록
      * @param defaultOrder 기본 정렬
-     * @return sort 내의 sort property 순서대로 OrderSpecifier 배열
+     * @return sort 내의 sort property 순서 대로 OrderSpecifier 배열
      */
     public static OrderSpecifier<?>[] getSort(Pageable pageable,
                                               List<EntityPathBase<?>> qClassList,
@@ -69,11 +69,11 @@ public class QueryDslUtil {
     }
 
     /**
-     * pageable 의 sort property 를 expressionMap 에서 매칭된 속성으로 OrderSpecifier 배열 반환
+     * pageable 의 sort property 를 expressionMap 에서 매칭된 속성 으로 OrderSpecifier 배열 반환
      *
      * @param pageable      Spring 의 pageable
      * @param expressionMap queryDsl 로 생성한 qClass 기반의 Expression
-     * @return sort 내의 sort property 순서대로 OrderSpecifier 배열
+     * @return sort 내의 sort property 순서 대로 OrderSpecifier 배열
      */
     public static OrderSpecifier<?>[] getSort(Pageable pageable, Map<String, Expression<? extends Comparable<?>>> expressionMap) {
         if (pageable == null || expressionMap == null) {
@@ -91,12 +91,12 @@ public class QueryDslUtil {
     }
 
     /**
-     * pageable 의 sort property 를 qClass List 에서 매칭된 속성으로 OrderSpecifier 배열 반환
-     * qClass 내에 연관된 entity field 까지는 접근하지 않는다.
+     * pageable 의 sort property 를 qClass List 에서 매칭된 속성 으로 OrderSpecifier 배열 반환
+     * qClass 내에 연관된 entity field 까지는 접근 하지 않는다.
      *
      * @param pageable Spring pageable
      * @param qClass   QueryDSL 로 생성된 EntityPathBase 객체
-     * @return sort 내의 sort property 순서대로 OrderSpecifier 배열
+     * @return sort 내의 sort property 순서 대로 OrderSpecifier 배열
      */
     public static <T> OrderSpecifier<?>[] getSort(Pageable pageable, EntityPathBase<T> qClass) {
         if (pageable == null || qClass == null) {
@@ -134,16 +134,16 @@ public class QueryDslUtil {
 
     private static OrderSpecifier<?>[] getDefaultSort(OrderSpecifier<?> defaultOrderSpecifier) {
         if (defaultOrderSpecifier == null) {
-            log.error("QueryDslUtil getSort defaultOrderSpecifier is null. stack={}", getStackTraceMethodNames());
+            log.error("QueryDslUtil getSort defaultOrderSpecifier is null. stack={}", getStackTraceMethodNames(3));
             return EMPTY_ORDER_SPECIFIER_ARRAY;
+            //throw new IllegalArgumentException("defaultOrderSpecifier is null");
         }
         return new OrderSpecifier<?>[]{defaultOrderSpecifier};
     }
 
-    private static String getStackTraceMethodNames() {
+    private static String getStackTraceMethodNames(int depth) {
         StackTraceElement[] stackTrace = Thread.currentThread().getStackTrace();
-        // 스택에서 현재 메서드까지 불필요한 정보 제거함 getStackTrace()와 getStackTraceMethodNames() 를 제외한 호출 스택
-        return Arrays.stream(stackTrace, 2, Math.min(stackTrace.length, 2 + DEFAULT_RECORD_STACK_COUNT))
+        return Arrays.stream(stackTrace, 2, Math.min(stackTrace.length, 2 + depth))// 스택 에서 현재 메서드 까지 불 필요한 정보 제거함 getStackTrace()와 getStackTraceMethodNames() 를 제외한 호출 스택
                 .map(element -> element.getClassName() + "." + element.getMethodName() + "()")
                 .collect(Collectors.joining(" -> "));
     }

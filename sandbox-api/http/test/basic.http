@@ -1,0 +1,3 @@
+### test 기본 API
+GET {{host}}/test
+Accept: application/json
