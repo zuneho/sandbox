@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MCP 채팅 - 세션</title>
+    <link rel="stylesheet" href="/webjars/bootstrap/5.2.3/css/bootstrap.min.css">
+    <style>
+        body {
+            padding-top: 20px;
+        }
+        .chat-container {
+            height: 500px;
+            overflow-y: auto;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            padding: 15px;
+            margin-bottom: 15px;
+            background-color: #f9f9f9;
+        }
+        .message {
+            margin-bottom: 15px;
+            padding: 10px;
+            border-radius: 5px;
+            max-width: 80%;
+            word-wrap: break-word;
+        }
+        .user-message {
+            background-color: #e9ecef;
+            margin-left: auto;
+            margin-right: 0;
+            text-align: right;
+        }
+        .agent-message {
+            background-color: #007bff;
+            color: white;
+            margin-right: auto;
+            margin-left: 0;
+        }
+        .message-header {
+            font-size: 0.8rem;
+            margin-bottom: 5px;
+            color: rgba(0, 0, 0, 0.5);
+        }
+        .agent-message .message-header {
+            color: rgba(255, 255, 255, 0.7);
+        }
+        .message-time {
+            font-size: 0.7rem;
+            margin-top: 5px;
+            text-align: right;
+        }
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255,255,255,.3);
+            border-radius: 50%;
+            border-top-color: #007bff;
+            animation: spin 1s ease-in-out infinite;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        .agent-status {
+            padding: 10px;
+            margin-bottom: 15px;
+            border-radius: 5px;
+            background-color: #f8f9fa;
+        }
+        .agent-status .agent {
+            display: inline-block;
+            margin-right: 15px;
+        }
+        .agent-status .waiting { color: #6c757d; }
+        .agent-status .processing { color: #ffc107; }
+        .agent-status .completed { color: #28a745; }
+        .session-info {
+            margin-bottom: 15px;
+            font-size: 0.9rem;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="row mb-3">
+        <div class="col-12">
+            <h1>MCP 채팅</h1>
+            <div class="session-info">
+                <p>
+                    <strong>세션 ID:</strong> <span th:text="${sessionId}" id="sessionId">세션ID</span>
+                    <button id="copySessionBtn" class="btn btn-sm btn-outline-secondary ms-2">복사</button>
+                </p>
+            </div>
+            <a href="/" class="btn btn-outline-primary mb-3">메인으로 돌아가기</a>
+        </div>
+    </div>
+
+    <div class="row mb-3">
+        <div class="col-12">
+            <div class="agent-status" id="agentStatus">
+                <div class="agent" th:each="agent : ${agents}">
+                        <span
+                                th:text="${agent.id == 'translator' ? '번역기' : (agent.id == 'analyst' ? '분석가' : (agent.id == 'summarizer' ? '요약가' : agent.id))}"
+                                class="agent-name">에이전트</span>:
+                    <span th:id="${'status-' + agent.id}" class="waiting">⏱️ 대기 중</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-12">
+            <div class="chat-container" id="chatContainer">
+                <!-- 대화 내용이 여기에 동적으로 추가됨 -->
+                <div th:each="message : ${conversationHistory}"
+                     th:class="${message.role == 'user' ? 'message user-message' : 'message agent-message'}"
+                     th:id="${'message-' + messageStat.index}">
+
+                    <div class="message-header" th:if="${message.role != 'user'}">
+                        <span th:text="${message.agentId == 'translator' ? '번역기' : (message.agentId == 'analyst' ? '분석가' : (message.agentId == 'summarizer' ? '요약가' : message.agentId))}">에이전트</span>
+                    </div>
+
+                    <div th:text="${message.content}">메시지 내용</div>
+
+                    <div class="message-time" th:text="${#temporals.format(message.timestamp, 'HH:mm:ss')}">시간</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-12">
+            <form id="chatForm" class="mb-3">
+                <div class="input-group">
+                    <input type="text" id="messageInput" class="form-control" placeholder="메시지를 입력하세요...">
+                    <button type="submit" class="btn btn-primary">전송</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script src="/webjars/jquery/3.6.4/jquery.min.js"></script>
+<script src="/webjars/bootstrap/5.2.3/js/bootstrap.min.js"></script>
+<script src="/webjars/sockjs-client/1.5.1/sockjs.min.js"></script>
+<script src="/webjars/stomp-websocket/2.3.4/stomp.min.js"></script>
+<script th:inline="javascript">
+    $(document).ready(function() {
+        // 세션 ID
+        const sessionId = [[${sessionId}]];
+        let stompClient = null;
+
+        // 메시지 컨테이너를 맨 아래로 스크롤
+        function scrollToBottom() {
+            const chatContainer = document.getElementById('chatContainer');
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+        }
+
+        // 페이지 로드 시 스크롤 아래로
+        scrollToBottom();
+
+        // 웹소켓 연결
+        function connect() {
+            const socket = new SockJS('/mcp-websocket');
+            stompClient = Stomp.over(socket);
+
+            stompClient.connect({}, function(frame) {
+                console.log('Connected: ' + frame);
+
+                // 에이전트 상태 구독
+                stompClient.subscribe('/topic/agent-status.' + sessionId, function(message) {
+                    const statusUpdate = JSON.parse(message.body);
+                    updateAgentStatus(statusUpdate.agentId, statusUpdate.status);
+                });
+
+                // 에이전트 응답 구독
+                stompClient.subscribe('/topic/agent-response.' + sessionId, function(message) {
+                    const response = JSON.parse(message.body);
+                    addAgentMessage(response.agentId, response.displayName, response.content);
+                });
+
+                // 워크플로우 상태 구독
+                stompClient.subscribe('/topic/status.' + sessionId, function(message) {
+                    const status = JSON.parse(message.body);
+                    console.log('Workflow status update:', status);
+
+                    // 에이전트 상태 업데이트
+                    for (const [agentId, agentStatus] of Object.entries(status.agentStatuses)) {
+                        updateAgentStatus(agentId, agentStatus);
+                    }
+                });
+
+                // 오류 구독
+                stompClient.subscribe('/topic/error.' + sessionId, function(message) {
+                    const error = JSON.parse(message.body);
+                    alert('오류 발생: ' + error.message);
+                });
+            }, function(error) {
+                console.error('Connection error:', error);
+                setTimeout(connect, 5000); // 연결 실패 시 5초 후 재시도
+            });
+        }
+
+        // 웹소켓 연결 해제
+        function disconnect() {
+            if (stompClient !== null) {
+                stompClient.disconnect();
+            }
+            console.log("Disconnected");
+        }
+
+        // 메시지 전송
+        function sendMessage(content) {
+            const chatMessage = {
+                sessionId: sessionId,
+                content: content,
+                userId: 'user' // 실제 인증 시스템이 있다면 변경 필요
+            };
+
+            // 웹소켓으로 전송
+            if (stompClient && stompClient.connected) {
+                stompClient.send("/app/chat", {}, JSON.stringify(chatMessage));
+            } else {
+                // 웹소켓 연결이 없는 경우 REST API 사용
+                $.ajax({
+                    url: '/api/chat',
+                    type: 'POST',
+                    contentType: 'application/json',
+                    data: JSON.stringify(chatMessage),
+                    success: function(response) {
+                        console.log('Message sent via REST API');
+                    },
+                    error: function(error) {
+                        console.error('Failed to send message:', error);
+                        alert('메시지 전송에 실패했습니다.');
+                    }
+                });
+            }
+
+            // UI에 사용자 메시지 추가
+            addUserMessage(content);
+        }
+
+        // 사용자 메시지 추가
+        function addUserMessage(content) {
+            const time = new Date();
+            const timeString = time.getHours().toString().padStart(2, '0') + ':' +
+                time.getMinutes().toString().padStart(2, '0') + ':' +
+                time.getSeconds().toString().padStart(2, '0');
+
+            const messageHtml = `
+                    <div class="message user-message">
+                        <div>${content}</div>
+                        <div class="message-time">${timeString}</div>
+                    </div>
+                `;
+
+            $('#chatContainer').append(messageHtml);
+            scrollToBottom();
+        }
+
+        // 에이전트 메시지 추가
+        function addAgentMessage(agentId, displayName, content) {
+            const time = new Date();
+            const timeString = time.getHours().toString().padStart(2, '0') + ':' +
+                time.getMinutes().toString().padStart(2, '0') + ':' +
+                time.getSeconds().toString().padStart(2, '0');
+
+            const messageHtml = `
+                    <div class="message agent-message">
+                        <div class="message-header">${displayName}</div>
+                        <div>${content}</div>
+                        <div class="message-time">${timeString}</div>
+                    </div>
+                `;
+
+            $('#chatContainer').append(messageHtml);
+            scrollToBottom();
+        }
+
+        // 에이전트 상태 업데이트
+        function updateAgentStatus(agentId, status) {
+            const statusElement = $('#status-' + agentId);
+
+            // 모든 상태 클래스 제거
+            statusElement.removeClass('waiting processing completed');
+
+            // 새 상태에 맞는 클래스와 이모지 추가
+            switch (status) {
+                case 'waiting':
+                    statusElement.addClass('waiting').text('⏱️ 대기 중');
+                    break;
+                case 'processing':
+                    statusElement.addClass('processing').text('⏳ 처리 중');
+                    break;
+                case 'completed':
+                    statusElement.addClass('completed').text('✅ 완료');
+                    break;
+                default:
+                    statusElement.addClass('waiting').text('⏱️ 대기 중');
+            }
+        }
+
+        // 폼 제출 이벤트 처리
+        $('#chatForm').on('submit', function(e) {
+            e.preventDefault();
+
+            const messageInput = $('#messageInput');
+            const content = messageInput.val().trim();
+
+            if (content) {
+                sendMessage(content);
+                messageInput.val('');
+            }
+        });
+
+        // 세션 ID 복사 버튼
+        $('#copySessionBtn').on('click', function() {
+            navigator.clipboard.writeText(sessionId)
+                .then(() => {
+                    alert('세션 ID가 클립보드에 복사되었습니다.');
+                })
+                .catch(err => {
+                    console.error('클립보드 복사 실패:', err);
+                });
+        });
+
+        // 웹소켓 연결 시작
+        connect();
+
+        // 페이지 언로드 시 연결 해제
+        $(window).on('beforeunload', function() {
+            disconnect();
+        });
+    });
+</script>
+</body>
+</html>

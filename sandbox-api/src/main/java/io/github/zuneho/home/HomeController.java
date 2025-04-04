@@ -8,9 +8,9 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 @RestController
 public class HomeController {
-
-    @GetMapping("/")
-    public ResponseEntity<String> home() {
-        return ResponseEntity.ok("Hello, World!");
-    }
+//
+//    @GetMapping("/")
+//    public ResponseEntity<String> home() {
+//        return ResponseEntity.ok("Hello, World!");
+//    }
 }

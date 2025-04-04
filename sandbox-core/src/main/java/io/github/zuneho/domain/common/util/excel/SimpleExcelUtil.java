@@ -2,6 +2,7 @@ package io.github.zuneho.domain.common.util.excel;
 
 
 import io.github.zuneho.domain.common.annotation.SimpleExcelField;
+import jakarta.annotation.Nullable;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.Builder;
 import lombok.Getter;
@@ -265,8 +266,108 @@ public class SimpleExcelUtil {
 
     public static class NoneConverter implements Converter<Object, Object> {
         @Override
-        public Object convert(Object source) {
+        public Object convert(@Nullable Object source) {
             return source;
+        }
+    }
+
+
+    /*
+     * Copy From  org.supercsv.util.ReflectionUtils
+     * CSV lib 의존성 제거 위해 별도로 떼어냄
+     *
+     * @author James Bassett
+     * @since 2.0.0
+     */
+    public static class ReflectionUtils {
+
+        public static final String GET_PREFIX = "get";
+        public static final String IS_PREFIX = "is";
+
+        // no instantiation
+        private ReflectionUtils() {
+        }
+
+        /**
+         * Returns the getter method associated with the object's field.
+         *
+         * @param object    the object
+         * @param fieldName the name of the field
+         * @return the getter method
+         * @throws NullPointerException if object or fieldName is null
+         * @throws RuntimeException     if the getter doesn't exist or is not visible
+         */
+        public static Method findGetter(final Object object, final String fieldName) {
+            if (object == null) {
+                throw new NullPointerException("object should not be null");
+            } else if (fieldName == null) {
+                throw new NullPointerException("fieldName should not be null");
+            }
+
+            final Class<?> clazz = object.getClass();
+
+            // find a standard getter
+            final String standardGetterName = getMethodNameForField(GET_PREFIX, fieldName);
+            Method getter = findGetterWithCompatibleReturnType(standardGetterName, clazz, false);
+
+            // if that fails, try for an isX() style boolean getter
+            if (getter == null) {
+                final String booleanGetterName = getMethodNameForField(IS_PREFIX, fieldName);
+                getter = findGetterWithCompatibleReturnType(booleanGetterName, clazz, true);
+            }
+
+            if (getter == null) {
+                throw new RuntimeException(
+                        String
+                                .format(
+                                        "unable to find getter for field %s in class %s - check that the corresponding nameMapping element matches the field name in the bean",
+                                        fieldName, clazz.getName()));
+            }
+
+            return getter;
+        }
+
+        /**
+         * Helper method for findGetter() that finds a getter with the supplied name, optionally enforcing that the method
+         * must have a Boolean/boolean return type. Developer note: this method could have accepted an actual return type to
+         * enforce, but it was more efficient to cater for only Booleans (as they're the only type that has differently
+         * named getters).
+         *
+         * @param getterName               the getter name
+         * @param clazz                    the class
+         * @param enforceBooleanReturnType if true, the method must return a Boolean/boolean, otherwise it's return type doesn't matter
+         * @return the getter, or null if none is found
+         */
+        private static Method findGetterWithCompatibleReturnType(final String getterName, final Class<?> clazz,
+                                                                 final boolean enforceBooleanReturnType) {
+
+            for (final Method method : clazz.getMethods()) {
+
+                if (!getterName.equalsIgnoreCase(method.getName()) || method.getParameterTypes().length != 0
+                        || method.getReturnType().equals(void.class)) {
+                    continue; // getter must have correct name, 0 parameters and a return type
+                }
+
+                if (!enforceBooleanReturnType || boolean.class.equals(method.getReturnType())
+                        || Boolean.class.equals(method.getReturnType())) {
+                    return method;
+                }
+
+            }
+
+            return null;
+        }
+
+
+        /**
+         * Gets the camelcase getter/setter method name for a field.
+         *
+         * @param prefix    the method prefix
+         * @param fieldName the field name
+         * @return the method name
+         */
+        private static String getMethodNameForField(final String prefix, final String fieldName) {
+            return prefix + fieldName.substring(0, 1).toUpperCase() + fieldName.substring(1);
         }
     }
 
