@@ -94,5 +94,9 @@ project(':sandbox-api') {
         // WebJars for frontend libraries
         implementation 'org.webjars:bootstrap:5.2.3'
         implementation 'org.webjars:jquery:3.6.4'
+
+        //cache
+        implementation 'org.springframework.boot:spring-boot-starter-cache'
+        implementation 'com.github.ben-manes.caffeine:caffeine'
     }
 }
