@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OAuth2 인증 완료</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body>
+<div class="container mt-5 text-center">
+    <div class="spinner-border mb-4" role="status">
+        <span class="visually-hidden">로딩중...</span>
+    </div>
+    <h3>인증 완료되었습니다. 잠시만 기다려주세요...</h3>
+</div>
+
+<script th:inline="javascript">
+    // Thymeleaf로부터 토큰 받기
+    const token = /*[[${token}]]*/ '';
+
+    if (token) {
+        // 토큰 저장
+        localStorage.setItem('token', token);
+        localStorage.setItem('tokenType', 'Bearer');
+
+        // 1초 후 메인 페이지로 리다이렉트
+        setTimeout(function() {
+            window.location.href = '/';
+        }, 1000);
+    } else {
+        alert('인증에 실패했습니다. 다시 시도해주세요.');
+        window.location.href = '/';
+    }
+</script>
+</body>
+</html>

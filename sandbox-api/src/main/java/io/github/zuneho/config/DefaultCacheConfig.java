@@ -167,34 +167,21 @@ public class DefaultCacheConfig {
         }
 
         /**
-         * 캐시 기본 이름과 모델 클래스 를 기반 으로 버전이 포함된 캐시 이름을 생성 합니다.
+         * 캐시 기본 이름과 모델 클래스를 기반으로 버전이 포함된 캐시 이름을 생성합니다.
          */
         public String getCacheName(String baseName, Class<?> modelClass) {
-            // 유효성 검증
-            if (baseName == null || baseName.isEmpty()) {
-                throw new IllegalArgumentException("Cache name prefix must not be empty");
-            }
-            if (modelClass == null) {
-                throw new IllegalArgumentException("Model class must not be null");
+            if (baseName == null || baseName.isEmpty() || modelClass == null) {
+                throw new IllegalArgumentException("Cache name prefix and model class must not be empty");
             }
 
-            // 캐시 키 생성
-            String cacheKey = baseName + ":" + modelClass.getName();
-
-            // 이미 계산된 캐시 이름이 있으면 재사용
-            String cacheName = cacheNameMap.get(cacheKey);
-            if (cacheName != null) {
-                return cacheName;
-            }
-
-            // 캐시 이름 계산 및 저장
-            String modelHash = calculateModelHash(modelClass);
-            cacheName = baseName + "_v" + modelHash;
-
-            log.info("Generated cache name: {} for model: {}", cacheName, modelClass.getName());
-            cacheNameMap.put(cacheKey, cacheName);
-
-            return cacheName;
+            return cacheNameMap.computeIfAbsent(
+                    baseName + ":" + modelClass.getName(),
+                    key -> {
+                        String cacheNameWithVersion = baseName + "_v" + calculateModelHash(modelClass);
+                        log.info("Generated cache name: {} for model: {}", cacheNameWithVersion, modelClass.getName());
+                        return cacheNameWithVersion;
+                    }
+            );
         }
 
         /**
