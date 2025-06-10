@@ -1,9 +1,10 @@
 package io.github.zuneho.domain.common.exception;
 
+import lombok.Getter;
 import org.springframework.http.HttpStatus;
 
+@Getter
 public class BusinessException extends RuntimeException {
-    private static final long serialVersionUID = 1L;
 
     private final HttpStatus responseStatus;
 
@@ -17,7 +18,4 @@ public class BusinessException extends RuntimeException {
         this.responseStatus = responseStatus;
     }
 
-    public HttpStatus getResponseStatus() {
-        return responseStatus;
-    }
 }
