@@ -26,11 +26,11 @@ public class QueryDslUtil {
      * @param defaultOrder  sortMapping 을 못할 경우  사용 하게 될 기본 정렬
      * @return sort 내의 sort property 순서 대로 OrderSpecifier 배열
      */
-    public static OrderSpecifier<?>[] getSort(Pageable pageable,
-                                              Map<String, Expression<? extends Comparable<?>>> expressionMap,
-                                              OrderSpecifier<?> defaultOrder
+    public static OrderSpecifier<?>[] toOrderBy(Pageable pageable,
+                                                Map<String, Expression<? extends Comparable<?>>> expressionMap,
+                                                OrderSpecifier<?> defaultOrder
     ) {
-        OrderSpecifier<?>[] parsedOrderBy = getSort(pageable, expressionMap);
+        OrderSpecifier<?>[] parsedOrderBy = toOrderBy(pageable, expressionMap);
         return ArrayUtils.isNotEmpty(parsedOrderBy) ? parsedOrderBy : getDefaultSort(defaultOrder);
     }
 
@@ -42,16 +42,16 @@ public class QueryDslUtil {
      * @param defaultOrder 기본 정렬
      * @return sort 내의 sort property 순서 대로 OrderSpecifier 배열
      */
-    public static OrderSpecifier<?>[] getSort(Pageable pageable,
-                                              List<EntityPathBase<?>> qClassList,
-                                              OrderSpecifier<?> defaultOrder
+    public static OrderSpecifier<?>[] toOrderBy(Pageable pageable,
+                                                List<EntityPathBase<?>> qClassList,
+                                                OrderSpecifier<?> defaultOrder
     ) {
         if (pageable == null || qClassList == null || qClassList.isEmpty()) {
             return getDefaultSort(defaultOrder);
         }
 
         Map<String, OrderSpecifier<?>> orderByMap = new LinkedHashMap<>();
-        qClassList.forEach(qClass -> Arrays.stream(getSort(pageable, qClass))
+        qClassList.forEach(qClass -> Arrays.stream(toOrderBy(pageable, qClass))
                 .filter(Objects::nonNull)
                 .forEach(orderSpecifier ->
                         orderByMap.putIfAbsent(extractKey(orderSpecifier.getTarget().toString()), orderSpecifier)));
@@ -75,7 +75,7 @@ public class QueryDslUtil {
      * @param expressionMap queryDsl 로 생성한 qClass 기반의 Expression
      * @return sort 내의 sort property 순서 대로 OrderSpecifier 배열
      */
-    public static OrderSpecifier<?>[] getSort(Pageable pageable, Map<String, Expression<? extends Comparable<?>>> expressionMap) {
+    public static OrderSpecifier<?>[] toOrderBy(Pageable pageable, Map<String, Expression<? extends Comparable<?>>> expressionMap) {
         if (pageable == null || expressionMap == null) {
             return EMPTY_ORDER_SPECIFIER_ARRAY;
         }
@@ -98,7 +98,7 @@ public class QueryDslUtil {
      * @param qClass   QueryDSL 로 생성된 EntityPathBase 객체
      * @return sort 내의 sort property 순서 대로 OrderSpecifier 배열
      */
-    public static <T> OrderSpecifier<?>[] getSort(Pageable pageable, EntityPathBase<T> qClass) {
+    public static <T> OrderSpecifier<?>[] toOrderBy(Pageable pageable, EntityPathBase<T> qClass) {
         if (pageable == null || qClass == null) {
             return EMPTY_ORDER_SPECIFIER_ARRAY;
         }
