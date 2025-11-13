@@ -12,9 +12,9 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-thymeleaf'
     implementation 'org.springframework.boot:spring-boot-starter-websocket'
 
-    // DB
-    runtimeOnly 'com.mysql:mysql-connector-j'
-    implementation 'com.zaxxer:HikariCP'
+    // DB - H2 for sandbox testing
+    runtimeOnly 'com.h2database:h2'
+    implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
 
     // WebSocket
     implementation 'org.webjars:webjars-locator-core'
